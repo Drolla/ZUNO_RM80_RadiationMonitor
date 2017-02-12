@@ -1,7 +1,5 @@
 # Z-Wave enabled Radiation, Temperature and Humidity Monitor with LCD Display
 
-## Table of Contents
-
 ## Description
 
 The project requires the following hardware components:
