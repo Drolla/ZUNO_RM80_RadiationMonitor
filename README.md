@@ -1,5 +1,7 @@
 # Z-Wave enabled Radiation, Temperature and Humidity Monitor with LCD Display
 
+## Table of Contents
+
 ## Description
 
 The project requires the following hardware components:
@@ -23,5 +25,30 @@ In addition to the functions related to the above hardware components, the appli
   * LCD display - Adafruit Sharp 1.3" Memory LCD Display
   * 1 resistor1 10kOhm
   * 2 press buttons
-  * Wires
-  * Breadboard
+  * Breadboard, wires
+
+
+## Schematics, PCB layout
+
+Schematic:
+
+![Schematic](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/KiCad_Schematic.png)
+
+PCB layout:
+
+![PCB Layout](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/KiCad_Layout.png)
+
+Breadboard:
+
+![Breadboard Drawing](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Fritzing_Breadboard.png)
+
+
+## Photos
+
+Breadboard:
+
+![Breadboard](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/FullCenter_Overview.JPG)
+
+Some display pictures:
+
+![Breadboard](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Display_AllSmall.jpg)
