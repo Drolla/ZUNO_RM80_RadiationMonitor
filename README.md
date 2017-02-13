@@ -13,6 +13,7 @@
 ## Description
 
 The project requires the following hardware components:
+  * Z-Uno (Z-Wave) development board from Z-Wave.Me
   * Radiation monitor - RM-60/70/80 radiation monitor from AWARE Electronics. Connected to the serial interface Serial0.
   * Temperature/humidity sensor - DHT22 temp/hum sensor, 10kOhm resistor. Controlled via a single pin using the ZUNO_DHT module.
   * LCD display - Adafruit Sharp 1.3" Memory LCD Display. Controlled via the SPI interface.
