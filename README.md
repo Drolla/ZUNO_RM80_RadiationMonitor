@@ -2,6 +2,14 @@
 
 ## Table of Contents
 
+* [Description](#description)
+* [Hardware required](#hardware-required)
+* [Schematics, PCB layout](#schematics-pcb-layout)
+* [Photos](#photos)
+* [Release history](#release-history)
+* [License](#license)
+
+
 ## Description
 
 The project requires the following hardware components:
@@ -28,6 +36,8 @@ In addition to the functions related to the above hardware components, the appli
   * Breadboard, wires
 
 
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
 ## Schematics, PCB layout
 
 Schematic:
@@ -43,6 +53,8 @@ Breadboard:
 ![Breadboard Drawing](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Fritzing_Breadboard.png)
 
 
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
 ## Photos
 
 Breadboard:
@@ -52,3 +64,18 @@ Breadboard:
 Some display pictures:
 
 ![Breadboard](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Display_AllSmall.jpg)
+
+
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+## Release history
+
+* 0.1
+    * Initial revision
+
+
+-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+## License
+
+This project is licensed under the MIT License - see the _LICENSE_ file for details.
