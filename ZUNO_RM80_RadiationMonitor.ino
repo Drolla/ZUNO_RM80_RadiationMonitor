@@ -268,8 +268,8 @@ xy_t writeFit_Label (xy_t x0,xy_t y0,xy_t x1,char *label,int Val, unsigned char 
 	if (Val==IntNA)
 		x0=LCD.writeFit(x0,y0,x1,"-",SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY);
 	else
-//		x0=LCD.writeFit(x0,y0,x1,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY);
-		x0=LCD.writeFit(x0,y0,x1,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY|SMLCD_WRITE_DECIMALPOS(DecimalPos));
+		x0=LCD.writeFit(x0,y0,x1,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY);
+		// x0=LCD.writeFit(x0,y0,x1,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY|SMLCD_WRITE_DECIMALPOS(DecimalPos)); // Requires 8 bytes more stack than the previous line
 	return x0; // Return next character position
 }
 
@@ -285,8 +285,8 @@ void vLineDotted (xy_t x, xy_t y0, xy_t y1) {
 // this range (including negative values) or if a decimal position is defined.
 void WriteCompact (xy_t x, xy_t y, int Val, unsigned char DecimalPos) {
 	if (DecimalPos!=0 || Val<1000 || Val>=10000) { // Normal writing
-//		LCD.writeS(x,y,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT);
-		LCD.writeS(x,y,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_DECIMALPOS(DecimalPos));
+		LCD.writeS(x,y,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT);
+		// LCD.writeS(x,y,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_DECIMALPOS(DecimalPos));  // Requires 8 bytes more stack than the previous line
 	} else { // Short writing (1.2k)
 		xy_t x=LCD.writeChrS(x,y,'0'+(Val/1000),SMLCD_WRITE_TIGHT);
 		x=LCD.writeChrS(x,'.',SMLCD_WRITE_TIGHT);
