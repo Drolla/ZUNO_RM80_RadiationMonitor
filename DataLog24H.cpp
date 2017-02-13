@@ -67,13 +67,14 @@ void DataLog24H::AddData(int NewData1M) {
 		ValNew=ValOld;
 	}
 	
-	// Calculate the mean value over the 1st 5 minutes
+	// Update the 5-minute mean value. Skip this update if less than 5 minutes 
+	// are registered. Skip updating the 5-minute interval array if the time is 
+	// not a multiple of 5 minutes.
+	if (Counter<6)
+		return;
 	Mean/=5;
 	Mean5M=Mean;
-
-	// Don't update the 5-minute interval array if the time is not a multiple of
-	// 5 minutes
-	if (Counter<6 || Counter%5!=1)
+	if (Counter%5!=1)
 		return;
 
 	// Every 5 minutes, shift mean value from the 1-minute interval array into 
@@ -86,13 +87,14 @@ void DataLog24H::AddData(int NewData1M) {
 		ValNew=ValOld;
 	}
 	
-	// Calculate the mean value over the 1st hour
+	// Update the 1-hour mean value. Skip this update if less than 1 hour
+	// is registered. Skip updating the 1-hour interval array if the time is 
+	// not a multiple of 1 hour.
+	if (Counter<5*12+1)
+		return;
 	Mean/=12;
 	Mean1H=Mean;
-
-	// Don't update the 1-hour interval array if the time is not a multiple of
-	// 1 hour
-	if (Counter<5*12+1 || Counter%(5*12)!=1)
+	if (Counter%(5*12)!=1)
 		return;
 
 	// Every hour, shift mean value from the 5-minute interval array into the 
@@ -105,7 +107,10 @@ void DataLog24H::AddData(int NewData1M) {
 		ValNew=ValOld;
 	}
 
-	// Calculate the mean value over the last 24 hours
+	// Update the 24-hours mean value. Skip this update if less than 24 hours
+	// are registered.
+	if (Counter<5*12*24+1)
+		return;
 	Mean/=24;
 	Mean24H=Mean;
 }
