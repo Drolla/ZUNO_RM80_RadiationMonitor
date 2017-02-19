@@ -195,7 +195,6 @@ void SharpMemoryLCD::clear() {
 			SharpMemoryLCD_DisplayBuffer[r][b]=0xff;
 }
 
-
 // setPixel - Sets a single pixel in the display buffer.
 void SharpMemoryLCD::setPixel(xy_t x,xy_t y) {
 	// Quit the methode if either x or y are outside of the display area
@@ -203,16 +202,16 @@ void SharpMemoryLCD::setPixel(xy_t x,xy_t y) {
 		return;
 	// Set the bit in function of the display orientation
 	#if SMLCD_ORIENTATION==0
-		byte Mask=(1<<((SMLCD_HEIGHT-1-x)%8));
+		byte Mask=(1<<((SMLCD_HEIGHT-1-x)&0x07));
 		SharpMemoryLCD_DisplayBuffer[(SMLCD_WIDTH-1-y)][(SMLCD_HEIGHT-1-x)>>3]&=(~Mask);
 	#elif SMLCD_ORIENTATION==90
-		byte Mask=(1<<((SMLCD_WIDTH-1-y)%8));
+		byte Mask=(1<<((SMLCD_WIDTH-1-y)&0x07));
 		SharpMemoryLCD_DisplayBuffer[x][(SMLCD_WIDTH-1-y)>>3]&=(~Mask);
 	#elif SMLCD_ORIENTATION==180
-		byte Mask=(1<<(x%8));
+		byte Mask=(1<<(x&0x07));
 		SharpMemoryLCD_DisplayBuffer[y][x>>3]&=(~Mask);
 	#elif SMLCD_ORIENTATION==270
-		byte Mask=(1<<(y%8));
+		byte Mask=(1<<(y&0x07));
 		SharpMemoryLCD_DisplayBuffer[(SMLCD_HEIGHT-1-x)][y>>3]&=(~Mask);
 	#endif
 }
@@ -300,13 +299,14 @@ xy_t SharpMemoryLCD::writeChrS(xy_t x,xy_t y,char Chr,byte Options) {
 		unsigned char v=*FontPtr++; // Get the font column pattern
 		if (!v && (Options&SMLCD_WRITE_TIGHT))
 			continue; // Skip the row if it is empty and tight writing enabled
-		v>>=1; // ignore the first bit (used to enforce space if tight writing is enabled)
-		// Loop over each dot in the column
-		for (xy_t yp=y; v; yp++) {
-			if (!(Options&SMLCD_WRITE_CHECKONLY))
+		if (!(Options&SMLCD_WRITE_CHECKONLY)) {
+			v>>=1; // ignore the first bit (used to enforce space if tight writing is enabled)
+			// Loop over each dot in the column
+			for (xy_t yp=y; v; yp++) {
 				if (v&1)
 					setPixel(x,yp);
-			v>>=1; // Go to the next bit in the pattern
+				v>>=1; // Go to the next bit in the pattern
+			}
 		}
 		x++;
 	}
@@ -329,19 +329,17 @@ xy_t SharpMemoryLCD::writeS(xy_t x,xy_t y,int Val,byte Options) {
 // writeChrM - Writes a medium character (11 pixel height) into the display 
 // buffer. The method scales the defined font patterns (Font5x8) by 150%, using
 // the following interpolation algorithm:
-// A 3x3 point window is moved over the 5x8 point font pattern with a 2 point 
-// step size. This 3x3 point window is expanded into a 4x4 point that moves 
-// with a 3 step size over the display area. The translation from the 3x3 
-// window to the 4x4 window in made in following way:
-//                    +--+--+--+--+
-//   +--+--+--+       |a1|b1 b1|c1|   The 3x3 point window takes the following
-//   |a1|b1|c1|       +--+--+--+--+   positions in the horizontal direction:
-//   +--+--+--+       |a2|b2|b2|c2|      0-2, 2-4
-//   |a2|b2|c2|  ==>  +--+--+--+--+   And the following ones in the vertical 
-//   +--+--+--+       |a2|b2|b2|c2|   direction (point 0 and 8 are ignored):
-//   |a3|b3|c3|       +--+--+--+--+      0-2, 2-4, 4-6, 6-8
-//   +--+--+--+       |a3|b3|b3|c3|
-//                    +--+--+--+--+
+// A 2x2 point window is moved over the 5x8 point font pattern with a 2 point 
+// step size. This 2x2 point window is expanded into a 3x3 point window that 
+// moves with a 3 step size over the display area. The translation from the 2x2 
+// window to the 3x3 window in made in following way:
+//                 +--+--+--+--+
+//   +--+--+       |a1|b1 b1|c1|   The 2x2 point window takes the following
+//   |a1|b1|       +--+--+--+--+   positions in the horizontal direction:
+//   +--+--+  ==>  |a2|b2|b2|c2|      0-1, 2-3, 4  
+//   |a2|b2|       +--+--+--+--+   And the following ones in the vertical 
+//   +--+--+       |a2|b2|b2|c2|   direction (point 0 and 8 are ignored):
+//                 +--+--+--+--+      0-1, 2-3, 4-5, 6-7
 xy_t SharpMemoryLCD::writeChrM(xy_t x,xy_t y,char Chr,byte Options) {
 	// Ignore non printable characters
 	if (Chr<0x20 || Chr>=0x7D)
@@ -351,32 +349,33 @@ xy_t SharpMemoryLCD::writeChrM(xy_t x,xy_t y,char Chr,byte Options) {
 	// Loop over each font column and row, set a pixel for each bit set in the 
 	// font pattern.
 	y--;
-	for (byte xp=0; xp<2; xp++) {
+	for (byte xp=0; xp<3; xp++) {
 		// Get the font column pattern for the 3 consecutive columns. In the next 
 		// iteration the last column (v2) becomes the first one (v0).
 		unsigned char v0=*FontPtr++;
 		unsigned char v1=*FontPtr++;
-		unsigned char v2=*FontPtr;
 		unsigned char Inc=3;
+		if (xp==2) {
+			Inc=1;
+			v1=0;
+		}
 		if (Options&SMLCD_WRITE_TIGHT) {
 			if (!v0) { // Skip the 1st row if it is empty and tight writing enabled
 				x--;
-				if (!v1)
+				if (!v1 && xp!=2)
 					x-=2;
-			}
-			if (!v2) { // Skip the last row if it is empty and tight writing enabled
-				Inc=2;
-				if (!v1)
-					Inc=0;
+			} else if (!v1 && xp!=2) {
+				Inc=1;
 			}
 		}
-		// ignore the first bit (used to enforce space if tight writing is enabled)
-		v0&=0xfe;
-		v1&=0xfe;
-		v2&=0xfe;
-		// Loop over each dot in the column
-		for (xy_t yp=y; v0|v1|v2; yp+=3) {
-			if (!(Options&SMLCD_WRITE_CHECKONLY)) {
+
+		if (!(Options&SMLCD_WRITE_CHECKONLY)) {
+			// ignore the first bit (used to enforce space if tight writing is enabled)
+			v0&=0xfe;
+			v1&=0xfe;
+
+			// Loop over each dot in the column
+			for (xy_t yp=y; v0|v1; yp+=3) {
 				if (v0&0x1) {
 					setPixel(x,yp); }
 				if (v0&0x2) {
@@ -384,13 +383,6 @@ xy_t SharpMemoryLCD::writeChrM(xy_t x,xy_t y,char Chr,byte Options) {
 					setPixel(x,yp+2); }
 				if (v0&0x4) {
 					setPixel(x,yp+3); }
-				if (v2&0x1) {
-					setPixel(x+3,yp); }
-				if (v2&0x2) {
-					setPixel(x+3,yp+1);
-					setPixel(x+3,yp+2); }
-				if (v2&0x4) {
-					setPixel(x+3,yp+3); }
 				if (v1&0x1) {
 					setPixel(x+1,yp);
 					setPixel(x+2,yp); }
@@ -402,15 +394,14 @@ xy_t SharpMemoryLCD::writeChrM(xy_t x,xy_t y,char Chr,byte Options) {
 				if (v1&0x4) {
 					setPixel(x+1,yp+3);
 					setPixel(x+2,yp+3); }
+				// Go to the next bits in the patterns
+				v0>>=2;
+				v1>>=2;
 			}
-			// Go to the next bit in the pattern
-			v0>>=2;
-			v1>>=2;
-			v2>>=2;
 		}
 		x+=Inc;
 	}
-	return x+3; // return the next character position
+	return x+2; // return the next character position
 }
 
 // writeM - Writes a character string in medium character (11 pixel height) into the 
@@ -440,16 +431,17 @@ xy_t SharpMemoryLCD::writeChrL(xy_t x,xy_t y,char Chr,byte Options) {
 		unsigned char v=*FontPtr++; // Get the font column pattern
 		if (!v && (Options&SMLCD_WRITE_TIGHT))
 			continue; // Skip the row if it is empty and tight writing enabled
-		v>>=1; // ignore the first bit (used to enforce space if tight writing is enabled)
-		for (xy_t yp=y; v; yp+=2) {
-			if (!(Options&SMLCD_WRITE_CHECKONLY))
+		if (!(Options&SMLCD_WRITE_CHECKONLY)) {
+			v>>=1; // ignore the first bit (used to enforce space if tight writing is enabled)
+			for (xy_t yp=y; v; yp+=2) {
 				if (v&1) {
 					setPixel(x,yp);
 					setPixel(x,yp+1);
 					setPixel(x+1,yp);
 					setPixel(x+1,yp+1);
 				}
-			v>>=1; // Go to the next bit in the pattern
+				v>>=1; // Go to the next bit in the pattern
+			}
 		}
 		x+=2;
 	}
@@ -524,28 +516,30 @@ char SharpMemoryLCD::getVBit() {
 // Function: int2Str - Converts a integer into a string. This function hasn't 
 // been added to the class SharpMemoryLCD to reduce stack usage.
 char *int2Str(int Val, byte DecimalPos) {
-	bool Neg=0;
+	// NegDecPos - Bit 7: Neg, Bits 3..0: Decimal position (stack usage optimized)
+	byte NegDecPos=DecimalPos;
+	if (NegDecPos==0)
+		NegDecPos=0x7f;
+	NegDecPos|=0x40; // Avoids underflow
 	if(Val<0) {
-		Neg=1;
+		NegDecPos|=0x80;
 		Val=-Val;
 	}
 	static char Str[10];
-	char *p=&Str[9];
-	*p--=0;
+	char *p=&Str[10];
+	*--p=0;
 	
-	if (DecimalPos==0)
-		DecimalPos=0xff;
 	while(1) {
-		if (!DecimalPos)
-			*p--='.';
-		DecimalPos--; // This will wrap from 0 to 0xff, but this is OK
-		*p--=(char)('0'+(Val%10));
+		if (!(NegDecPos&0x3f))
+			*--p='.';
+		NegDecPos--;
+		*--p=(char)('0'+(Val%10));
 		Val/=10;
 		if (Val==0)
 			break;
 	}
-	if (Neg) {
-		*p--='-';
+	if (NegDecPos&0x80) {
+		*--p='-';
 	}
-	return p+1;
+	return p;
 }
