@@ -14,7 +14,7 @@
 
 The project requires the following hardware components:
   * Z-Uno (Z-Wave) development board from Z-Wave.Me
-  * Radiation monitor - RM-60/70/80 radiation monitor from AWARE Electronics. Connected to the serial interface Serial0.
+  * Radiation monitor - RM-60/70/80 radiation monitor from AWARE Electronics. Connected to the external interrupt ZUNO_EXT_ZEROX (version 0.2 and later, connected to serial interface Serial0 in version 0.1).
   * Temperature/humidity sensor - DHT22 temp/hum sensor, 10kOhm resistor. Controlled via a single pin using the ZUNO_DHT module.
   * LCD display - Adafruit Sharp 1.3" Memory LCD Display. Controlled via the SPI interface.
   * Control buttons - 2 simple press buttons connected to 2 DIOs.
@@ -72,7 +72,10 @@ Some display pictures:
 ## Release history
 
 * 0.1
-    * Initial revision
+    * Initial version, verified with Z-Uno firmware revision 2.0.7. Since no external interrupts are supported in this firmware revision, the RM-80 radiation monitor has to be connected to the serial interface Serial0.
+* 0.2
+    * Version adapted for Z-Uno firmware version 2.0.9 that supports external interrupts. The RM-80 radiation monitor has to be connected to the external interrupt 'ZUNO_EXT_ZEROX'.
+	 * Only valid mean/average values are reported via Z-Wave.
 
 
 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -

@@ -5,9 +5,9 @@
 * hardware components:
 *   - Radiation monitor
 *     RM-60/70/80 radiation monitor from AWARE Electronics. Connected to the
-*     serial interface Serial0.
+*     external interrupt 'ZUNO_EXT_ZEROX'.
 *   - Temperature/humidity sensor
-*     DHT22 temp/hum sensor, xxkOhm resistor. Controlled via a single pin using
+*     DHT22 temp/hum sensor, 10kOhm resistor. Controlled via a single pin using
 *     the ZUNO_DHT module.
 *   - LCD display
 *     Adafruit Sharp 1.3" Memory LCD Display. Controlled via the SPI interface.
@@ -98,6 +98,7 @@ DHT dht(DHTPIN, DHT22); // Sensor object
 
 // Radiation measurements
 unsigned int NbrRadEvents; // Counts number of radiation events per time interval)
+unsigned char RadEventOccured; // Will be set by the radiation event interrupt routine
 DataLog24H RadEventDataLog; // Radiation data logging 24h
 
 unsigned long NextLogTime; // Next log time (interval is 60 seconds)
@@ -216,7 +217,7 @@ void ReadConfig() {
 	// Read the configuration and the checksum
 	byte StoredConfig=EEPROM.read(0);
 	byte StoredCheckSum=EEPROM.read(1);
-	
+
 	// Ignore the configuration if the checksum is incorrect
 	if ((StoredConfig^StoredCheckSum)!=0xff)
 		return;
@@ -269,7 +270,6 @@ xy_t writeFit_Label (xy_t x0,xy_t y0,xy_t x1,char *label,int Val, unsigned char 
 		x0=LCD.writeFit(x0,y0,x1,"-",SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY);
 	else
 		x0=LCD.writeFit(x0,y0,x1,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY);
-		// x0=LCD.writeFit(x0,y0,x1,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_CENTERY|SMLCD_WRITE_DECIMALPOS(DecimalPos)); // Requires 8 bytes more stack than the previous line
 	return x0; // Return next character position
 }
 
@@ -286,9 +286,8 @@ void vLineDotted (xy_t x, xy_t y0, xy_t y1) {
 void WriteCompact (xy_t x, xy_t y, int Val, unsigned char DecimalPos) {
 	if (DecimalPos!=0 || Val<1000 || Val>=10000) { // Normal writing
 		LCD.writeS(x,y,int2Str(Val,DecimalPos),SMLCD_WRITE_TIGHT);
-		// LCD.writeS(x,y,Val,SMLCD_WRITE_TIGHT|SMLCD_WRITE_DECIMALPOS(DecimalPos));  // Requires 8 bytes more stack than the previous line
 	} else { // Short writing (1.2k)
-		xy_t x=LCD.writeChrS(x,y,'0'+(Val/1000),SMLCD_WRITE_TIGHT);
+		x=LCD.writeChrS(x,y,'0'+(Val/1000),SMLCD_WRITE_TIGHT);
 		x=LCD.writeChrS(x,'.',SMLCD_WRITE_TIGHT);
 		x=LCD.writeChrS(x,y,'0'+((Val/100)%10),SMLCD_WRITE_TIGHT);
 		x=LCD.writeChrS(x,'k',SMLCD_WRITE_TIGHT);
@@ -543,6 +542,18 @@ void LCD_Show(byte ActiveButton) {
 	LCD.update();
 }
 
+/**** Radiation event handler ****/
+
+// ISR for external interrupt ZUNO_EXT_ZEROX. Used to register events from the 
+// RM-60/70/80 radiation monitor.
+
+ZUNO_SETUP_ISR_ZEROX(IntHandlerRadEvent);
+
+void IntHandlerRadEvent() {
+	NbrRadEvents++; // Increment the radiation counter
+	RadEventOccured++; // Indicates to the main loop that an event happened
+}
+
 /**** Setup and loop functions ****/
 
 void setup() {
@@ -554,7 +565,7 @@ void setup() {
   // Initialize all modules
   dht.begin(); // DHT22 temperature/humidity sensor
   Serial.begin(); // Status information reports
-  Serial0.begin(115200); // RM-60/80 input - set to highest baud rate
+  zunoExtIntMode(ZUNO_EXT_ZEROX, FALLING); // RM-60/80 input
   LCD.begin(); // LCD display
 
   // Read the configuration stored in the EEPROM
@@ -568,31 +579,25 @@ void setup() {
   
   // Initialize the radiation event counter
   NbrRadEvents=0;
+  RadEventOccured=0;
 }
 
 void loop() {
+	// Generate a user LED flash if this feature has been configured and if
+	// an event happened
+	if(CONFIG_LED_REPORT && RadEventOccured) {
+		digitalWrite(LED_PIN, HIGH); // Enable the LED
+		RadEventOccured=0; // Reset the event indicator
+		delay(50); // Flash time
+		digitalWrite(LED_PIN, LOW); // Disable the user LED again
+	}
+
 	// Update the display mode if one of the 2 buttons has been pressed
 	if (digitalRead(PIN_BUTTON1)==LOW)
 		LCD_Show(1);
 	if (digitalRead(PIN_BUTTON2)==LOW)
 		LCD_Show(2);
 
-	// Handle radiation events: Each radiation event activates the serial 
-	// interface, which adds a value in the serial interface buffer
-	while (Serial0.available()) {
-		// Generate a user LED flash if configured
-		if(CONFIG_LED_REPORT)
-			digitalWrite(LED_PIN, HIGH);
-		// Remove the generated values from the UART buffer and increment
-		// the radiation counter
-		Serial0.read();
-		NbrRadEvents++; // Increment the radiation counter
-	}
-	
-	// Wait 50 milliseconds and disable the user LED again
-	delay(50);
-	digitalWrite(LED_PIN, LOW);
-	
 	// If the next log time is reached, log the new values
 	if (millis()>=NextLogTime) {
 		// Log the number of radiation events, reset the counter
@@ -612,12 +617,16 @@ void loop() {
 			Humidity = dht.readHumidity();
 		#endif
 
-		// Generate Z-Wave reports if this is configured
+		// Generate Z-Wave reports if configured and the if the value is available
 		if (CONFIG_ZWAVE_REPORT) {
-			zunoSendReport(1);
-			zunoSendReport(2);
-			zunoSendReport(3);
-			zunoSendReport(4);
+			if(RadEventDataLog.GetMean1M()>=0)
+				zunoSendReport(1);
+			if(RadEventDataLog.GetMean5M()>=0)
+				zunoSendReport(2);
+			if(RadEventDataLog.GetMean1H()>=0)
+				zunoSendReport(3);
+			if(RadEventDataLog.GetMean24H()>=0)
+				zunoSendReport(4);
 			zunoSendReport(5);
 			zunoSendReport(6);
 		}
@@ -636,4 +645,3 @@ void loop() {
 	// Refresh regularly the physical LCD display (toggle VCOM)
 	LCD.refresh();
 }
-
