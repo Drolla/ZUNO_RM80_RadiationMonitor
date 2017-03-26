@@ -53,10 +53,6 @@ Breadboard:
 
 ![Breadboard Drawing](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Fritzing_Breadboard.png)
 
-Final device:
-
-![Final device](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Final_Device.jpg)
-
 
 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
@@ -65,6 +61,10 @@ Final device:
 Breadboard:
 
 ![Breadboard](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/FullCenter_Overview.JPG)
+
+Final device:
+
+![Final device](https://github.com/Drolla/ZUNO_RM80_RadiationMonitor/wiki/Final_Device.jpg)
 
 Some display pictures:
 
